@@ -1,3 +1,7 @@
+//This code allows us to RECIEVE using the nrf24 module
+//tutorial source here: https://howtomechatronics.com/tutorials/arduino/arduino-wireless-communication-nrf24l01-tutorial/
+//required libraries here: https://github.com/nRF24/RF24
+
 #include <SPI.h>
 #include <nRF24L01.h>
 #include <RF24.h>
