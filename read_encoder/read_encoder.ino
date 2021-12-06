@@ -27,6 +27,11 @@ float v1Prev = 0;
 float v2Filt = 0;
 float v2Prev = 0;
 
+// calculated desired values
+float desired_rpm = 0;
+float sender_release_pulse_angle = 0;
+float catcher_angle = 0;
+
 //pid
 float eintegral = 0;
 
@@ -45,6 +50,30 @@ void setup() {
 
   attachInterrupt(digitalPinToInterrupt(ENCA),
                   readEncoder,RISING);
+
+  const float g = 9.81;
+  const float l = 0.127; // arm length (5")
+  const float d = 0.5; // distance to target (m)
+  const float theta = 45*PI/180;
+  const float theta_zero = PI/2;
+  const float d_receiver = cos(theta)*(l-0.0254); // distance from arm center to catcher center
+  const float d_total = 2*d_receiver + d;
+  const float v_0 = sqrt(g*d_total/sin(2*theta));
+  const float desired_omega = v_0/l; //rad/s
+  float desired_rpm = desired_omega*60/(2*PI);
+  const float t_r = (theta+theta_zero)/desired_omega; // time of release at theta_sum = 135 after t = 0 at theta = 0
+  const float t_e = 30/1000; //error time (default set at 30 ms)
+  const float t_l = t_r - t_e; //time accounting for delay of signal
+  
+  const float flight_time = 2*v_0*sin(theta)/g;
+  
+  float catcher_angle = ((3*PI/2 - PI/4) - desired_omega*flight_time)*180/(PI*0.6);
+  
+  while (abs(catcher_angle) > 360){
+    catcher_angle = catcher_angle + 360;
+  }
+  
+  sender_release_pulse_angle = ((desired_omega*t_l)*180/(PI))/0.6; //0.6 to get which pulse # from 1-600
 }
 
 void loop() {
@@ -78,7 +107,7 @@ void loop() {
   // FIND THESE VALUES
   float kp = 5;
   float ki = 10;
-  float e = vt-v1Filt;
+  float e = desired_rpm-v1Filt;
   eintegral = eintegral + e*deltaT;
   
   float u = kp*e + ki*eintegral;
