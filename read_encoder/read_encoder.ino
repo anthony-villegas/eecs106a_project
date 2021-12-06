@@ -53,11 +53,7 @@ void setup() {
 
   attachInterrupt(digitalPinToInterrupt(ENCA),
                   readEncoder,RISING);
-<<<<<<< HEAD
-
-=======
   
->>>>>>> c9da549e614a8e9b1d5a23930c73c2f7413c2872
   const float g = 9.81;
   const float l = 0.127; // arm length (5")
   const float d = 0.5; // distance to target (m)
@@ -80,11 +76,7 @@ void setup() {
     catcher_angle = catcher_angle + 360;
   }
   
-<<<<<<< HEAD
   sender_release_pulse_angle = ((desired_omega*t_l)*180/(PI))/0.6; //0.6 to get which pulse # from 1-600
-=======
-  float sender_release_pulse_angle = ((desired_omega*t_l)*180/(PI))/0.6; //0.6 to get which pulse # from 1-600
->>>>>>> c9da549e614a8e9b1d5a23930c73c2f7413c2872
 }
 
 void loop() {
