@@ -2,16 +2,6 @@
 #define ENCA 2
 #define ENCB 3
 
-//Includes required to use Roboclaw library
-#include <SoftwareSerial.h>
-#include "RoboClaw.h"
-
-//See limitations of Arduino SoftwareSerial
-SoftwareSerial serial(19,18);  
-RoboClaw roboclaw(&serial,10000);
-
-#define address 0x80
-
 // globals
 long prevT = 0;
 int posPrev = 0;
@@ -21,23 +11,13 @@ volatile int pos_i = 0;
 volatile float velocity_i = 0;
 volatile long prevT_i = 0;
 
-// velocity values to be used
 float v1Filt = 0;
 float v1Prev = 0;
 float v2Filt = 0;
 float v2Prev = 0;
 
-//pid
-float eintegral = 0;
-
-// desired velocity
-float vt;
-
 
 void setup() {
-  //Open roboclaw serial ports
-  roboclaw.begin(38400);
-  
   Serial.begin(115200);
 
   pinMode(ENCA,INPUT_PULLUP);
@@ -65,34 +45,14 @@ void loop() {
   prevT = currT;
 
   // Convert count/s to RPM
-  float v1 = velocity1/600*60.0;
-  float v2 = velocity2/600*60.0;
+  float v1 = velocity1/360*60.0;
+  float v2 = velocity2/360*60.0;
 
   // Low-pass filter (25 Hz cutoff)
   v1Filt = 0.854*v1Filt + 0.0728*v1 + 0.0728*v1Prev;
   v1Prev = v1;
   v2Filt = 0.854*v2Filt + 0.0728*v2 + 0.0728*v2Prev;
   v2Prev = v2;
-
-  // Compute the control signal u
-  // FIND THESE VALUES
-  float kp = 5;
-  float ki = 10;
-  float e = vt-v1Filt;
-  eintegral = eintegral + e*deltaT;
-  
-  float u = kp*e + ki*eintegral;
-
-  // Set the motor speed and direction
-  int dir = 1;
-  if (u<0){
-    dir = -1;
-  }
-  int pwr = (int) fabs(u);
-  if(pwr > 127){
-    pwr = 127;
-  }
-  setMotor(dir,pwr);
 
 
   Serial.print(" ");
@@ -102,18 +62,6 @@ void loop() {
   delay(1);
 }
 
-void setMotor(int dir, int pwmVal){
-  if(dir == 1){ 
-    // Turn one way
-    roboclaw.ForwardM1(address, pwmVal);
-  }
-  else if(dir == -1){
-    // Turn the other way
-    roboclaw.BackwardM1(address,pwmVal);
-  } else {
-    roboclaw.ForwardM1(address, 0);
-    }
-}
 
 void readEncoder(){
   // Read encoder B when ENCA rises
@@ -129,5 +77,9 @@ void readEncoder(){
   }
   pos_i = pos_i + increment;
 
-  // check if angle == desired, if so trigger release
+  // Compute velocity with method 2
+  //long currT = micros();
+  //float deltaT = ((float) (currT - prevT_i))/1.0e6;
+  //velocity_i = increment/deltaT;
+  //prevT_i = currT;
 }
