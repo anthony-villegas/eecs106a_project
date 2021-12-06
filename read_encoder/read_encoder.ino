@@ -45,9 +45,8 @@ void loop() {
   prevT = currT;
 
   // Convert count/s to RPM
-  //divide by 720 since our encoder gives 360 p/r but we double count both phases in interrupt
-  float v1 = velocity1/720*60.0;
-  float v2 = velocity2/720*60.0;
+  float v1 = velocity1/360*60.0;
+  float v2 = velocity2/360*60.0;
 
   // Low-pass filter (25 Hz cutoff)
   v1Filt = 0.854*v1Filt + 0.0728*v1 + 0.0728*v1Prev;
@@ -58,6 +57,7 @@ void loop() {
 
   Serial.print(" ");
   Serial.print(v1Filt);
+  //Serial.print(pos);
   Serial.println();
   delay(1);
 }
