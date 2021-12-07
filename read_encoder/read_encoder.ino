@@ -1,14 +1,20 @@
 // Pins
 #define ENCA 2
 #define ENCB 3
+#define INDUCT 20
+#define servoPin 9
 
 //Includes required to use Roboclaw library
 #include <SoftwareSerial.h>
 #include "RoboClaw.h"
 
+#include <Servo.h>
+
 //See limitations of Arduino SoftwareSerial
 SoftwareSerial serial(19,18);  
 RoboClaw roboclaw(&serial,10000);
+
+Servo myservo;
 
 #define address 0x80
 
@@ -20,27 +26,27 @@ int posPrev = 0;
 volatile int pos_i = 0;
 volatile float velocity_i = 0;
 volatile long prevT_i = 0;
+volatile int pos_induct = -999;
 
 // velocity values to be used
 float v1Filt = 0;
 float v1Prev = 0;
 float v2Filt = 0;
 float v2Prev = 0;
-float desired_rpm = 0;
-float sender_release_pulse_angle = 0;
-float catcher_angle = 0;
 
 // calculated desired values
 float desired_rpm = 0;
 float sender_release_pulse_angle = 0;
 float catcher_angle = 0;
 
+float rpmError = 1;
+
 //pid
 float eintegral = 0;
 
-// desired velocity
-float vt;
-
+// open and closed angles of servo, CHANGE THESE VALUES
+int servoOpen = 0;
+int servoClosed = 180;
 
 void setup() {
   //Open roboclaw serial ports
@@ -50,14 +56,15 @@ void setup() {
 
   pinMode(ENCA,INPUT_PULLUP);
   pinMode(ENCB,INPUT_PULLUP);
+  pinMode(INDUCT, INPUT);
+  // Attach the Servo variable to a pin:
+  myservo.attach(servoPin);
 
   attachInterrupt(digitalPinToInterrupt(ENCA),
                   readEncoder,RISING);
-<<<<<<< HEAD
+  attachInterrupt(digitalPinToInterrupt(INDUCT),
+                  senseInductive,RISING);
 
-=======
-  
->>>>>>> c9da549e614a8e9b1d5a23930c73c2f7413c2872
   const float g = 9.81;
   const float l = 0.127; // arm length (5")
   const float d = 0.5; // distance to target (m)
@@ -80,11 +87,7 @@ void setup() {
     catcher_angle = catcher_angle + 360;
   }
   
-<<<<<<< HEAD
   sender_release_pulse_angle = ((desired_omega*t_l)*180/(PI))/0.6; //0.6 to get which pulse # from 1-600
-=======
-  float sender_release_pulse_angle = ((desired_omega*t_l)*180/(PI))/0.6; //0.6 to get which pulse # from 1-600
->>>>>>> c9da549e614a8e9b1d5a23930c73c2f7413c2872
 }
 
 void loop() {
@@ -170,4 +173,26 @@ void readEncoder(){
   pos_i = pos_i + increment;
 
   // check if angle == desired, if so trigger release
+  if (pos_i == (int)sender_release_pulse_angle and (v1Filt < desired_rpm + rpmError and v1Filt > desired_rpm - rpmError)){
+      noInterrupts();
+      releaseBall();
+      interrupts();
+    } 
 }
+
+void senseInductive(){
+  int pos = 0;
+  noInterrupts(); // disable interrupts temporarily while reading
+  pos = pos_i;
+  interrupts(); // turn interrupts back on
+  
+  if(pos_induct==-999){
+    pos_induct = pos;
+   } else {
+     pos_induct = (pos_induct + pos)/2; 
+   }
+ }
+
+ void releaseBall(){
+  myservo.write(servoOpen);
+  }

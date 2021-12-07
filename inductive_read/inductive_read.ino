@@ -1,27 +1,24 @@
-int limitswitch=4;
-int state= LOW;
-int value;
-void setup()
-{
-Serial.begin(9600);
-pinMode(limitswitch,INPUT);
+//const int Pin=20;
+#define INDUCT 20
+void setup() {
+    pinMode(INDUCT, INPUT);
+    attachInterrupt(digitalPinToInterrupt(INDUCT),
+                  senseInductive,RISING);
+    Serial.begin(9600);
+}
  
+void loop() {
+    //int sensorValue = digitalRead(Pin);
+    //if(sensorValue==HIGH){ 
+      //  Serial.println("no Object");
+        //delay(500);
+    //}
+    //else{
+      //  Serial.println("Object Detected");
+        //delay(500);
+    //}
 }
-void loop()
-{
-value = digitalRead(limitswitch);
-if(value!=state)
-{
-  state=value;
-  Serial.println("sensor value =");
-  if (state==0)
-  {
-    Serial.println("target detected");
+
+void senseInductive(){
+  Serial.println("hi!");
   }
-    
-   else{
-     Serial.println("No target detected");
-    }
- }
- delay(300);
-}
