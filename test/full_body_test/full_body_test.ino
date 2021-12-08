@@ -11,7 +11,7 @@
 #include <Servo.h>
 
 //See limitations of Arduino SoftwareSerial
-SoftwareSerial serial(19,18);  
+SoftwareSerial serial(17,16);  
 RoboClaw roboclaw(&serial,10000);
 
 Servo myservo;
