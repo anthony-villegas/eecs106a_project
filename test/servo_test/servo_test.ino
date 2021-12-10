@@ -6,29 +6,23 @@ Servo myservo;
 // Define the servo pin:
 #define servoPin 9
 // Create a variable to store the servo position:
-int angle = 0;
+int angleClosed = 100;
+int angleOpen = 150;
 void setup() {
   // Attach the Servo variable to a pin:
   myservo.attach(servoPin);
+  Serial.begin(9600);
 }
 void loop() {
-   myservo.write(45);
-  // Tell the servo to go to a particular angle:
-  //myservo.write(90);
-  //delay(1000);
-  //myservo.write(180);
-  //delay(1000);
-  //myservo.write(0);
-  //delay(1000);
-  // Sweep from 0 to 180 degrees:
-  //for (angle = 0; angle <= 180; angle += 1) {
-    //myservo.write(angle);
-    //delay(15);
+  //Serial.println("Input angle for servo"); //Prompt User for Input
+  //while (Serial.available() == 0) {
+    // Wait for User to Input Data
   //}
-  // And back from 180 to 0 degrees:
-  //for (angle = 180; angle >= 0; angle -= 1) {
-    //myservo.write(angle);
-    //delay(30);
-  //}
+  //angle = Serial.parseInt(); //Read the data the user has input
+  //Serial.println(angle);
+  //myservo.write(angle);
   //delay(1000);
+  //myservo.write(angleOpen);
+  myservo.write(angleOpen);
+  
 }

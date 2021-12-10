@@ -45,8 +45,8 @@ void loop() {
   prevT = currT;
 
   // Convert count/s to RPM
-  float v1 = velocity1/360*60.0;
-  float v2 = velocity2/360*60.0;
+  float v1 = velocity1/600*60.0;
+  float v2 = velocity2/600*60.0;
 
   // Low-pass filter (25 Hz cutoff)
   v1Filt = 0.854*v1Filt + 0.0728*v1 + 0.0728*v1Prev;

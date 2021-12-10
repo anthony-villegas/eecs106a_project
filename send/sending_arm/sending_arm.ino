@@ -45,8 +45,10 @@ float rpmError = 1;
 float eintegral = 0;
 
 // open and closed angles of servo, CHANGE THESE VALUES
-int servoOpen = 0;
-int servoClosed = 180;
+int servoOpen = 150;
+int servoClosed = 100;
+
+boolean ball_released = false;
 
 void setup() {
   //Open roboclaw serial ports
@@ -91,7 +93,10 @@ void setup() {
 }
 
 void loop() {
-
+    if (ball_released == true) {
+      roboclaw.ForwardM2(address, 0);
+      while(true){}
+    }
   // read the position and velocity
   int pos = 0;
   float velocity2 = 0;
@@ -135,8 +140,12 @@ void loop() {
   if(pwr > 127){
     pwr = 127;
   }
-  setMotor(dir,pwr);
-
+  //spinArm(dir,pwr);
+  spinArm(-1, 80);
+  delay(3000);
+  spinArm(-1, 0);
+  delay(10000);
+  
 
   Serial.print(" ");
   Serial.print(v1Filt);
@@ -145,16 +154,16 @@ void loop() {
   delay(1);
 }
 
-void setMotor(int dir, int pwmVal){
+void spinArm(int dir, int pwmVal){
   if(dir == 1){ 
     // Turn one way
-    roboclaw.ForwardM1(address, pwmVal);
+    roboclaw.ForwardM2(address, pwmVal);
   }
   else if(dir == -1){
     // Turn the other way
-    roboclaw.BackwardM1(address,pwmVal);
+    roboclaw.BackwardM2(address,pwmVal);
   } else {
-    roboclaw.ForwardM1(address, 0);
+    roboclaw.ForwardM2(address, 0);
     }
 }
 
@@ -177,6 +186,7 @@ void readEncoder(){
       noInterrupts();
       releaseBall();
       interrupts();
+      ball_released = true;
     } 
 }
 

@@ -1,0 +1,1 @@
+This repository contains an Arduino sketch that tests using an Arduino to control a RoboClaw in standard serial mode. The code in this repository is for use with [this Application Note](https://resources.basicmicro.com/standard-serial-mode-with-arduino/).

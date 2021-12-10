@@ -19,7 +19,7 @@ void loop() {
   // Turn on motors
   digitalWrite(in1, LOW);
   digitalWrite(in2, HIGH);
-  analogWrite(enA, 255);
+  analogWrite(enA, 0);
   //directionControl();
   //delay(1000);
   //speedControl();
