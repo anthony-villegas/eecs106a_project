@@ -1,20 +1,17 @@
 // Motor A connections
 #define ENCA 2
 #define ENCB 3
-#define INDUCT 20
-int enA = 11;
-int in1 = 12;
-int in2 = 13;
+
 
 //Includes required to use Roboclaw library
-#include <SoftwareSerial.h>
-#include "RoboClaw.h"
+//#include <SoftwareSerial.h>
+//#include "RoboClaw.h"
 
 //See limitations of Arduino SoftwareSerial
-SoftwareSerial serial(19,18);  
-RoboClaw roboclaw(&serial,10000);
+//SoftwareSerial serial(19,18);  
+//RoboClaw roboclaw(&serial,10000);
 
-#define address 0x80
+//#define address 0x80
 
 // globals
 long prevT = 0;
@@ -40,23 +37,21 @@ float rpmError = 1;
 //pid
 float eintegral = 0;
 
-int maxMotorPWM = 127;
+int maxMotorPWM = 60;
 
 void setup() {
   //Open roboclaw serial ports
-  roboclaw.begin(38400);
+  //roboclaw.begin(38400);
   
   Serial.begin(115200);
 
   pinMode(ENCA,INPUT_PULLUP);
   pinMode(ENCB,INPUT_PULLUP);
-  pinMode(INDUCT, INPUT);
+ 
 
 
   attachInterrupt(digitalPinToInterrupt(ENCA),
                   readEncoder,RISING);
-  attachInterrupt(digitalPinToInterrupt(INDUCT),
-                  senseInductive,RISING);
 
 
 }
@@ -85,10 +80,14 @@ void loop() {
 
   // Compute the control signal u
   // FIND THESE VALUES
-  float kp = 2.5;
-  float ki = 0;
+  float kp = 2.3;
+  float ki = 0.1;
   float e = desired_rpm-v1Filt;
+  //float e = desired_rpm-v1;
   eintegral = eintegral + e*deltaT;
+  if (eintegral > 10){
+    eintegral = 10;
+    }
   
   float u = kp*e + ki*eintegral;
 
@@ -101,41 +100,17 @@ void loop() {
   if(pwr > maxMotorPWM){
     pwr = maxMotorPWM;
   }
-  spinArm(dir,pwr);
+  //roboclaw.BackwardM2(address, pwr);
+  //spinArm(dir,pwr);
 
   //Serial.print(" ");
-  Serial.print(v1Filt);
+  Serial.print(v1);
   //Serial.print(pos);
   Serial.println();
   //delay(1);
 }
 
-void spinArm(int dir, int pwmVal){
-  roboclaw.BackwardM2(address, pwmVal);
-  //if(dir == 1){ 
-    // Turn one way
-    //roboclaw.BackwardM2(address, pwmVal);
-  //}
-  //else if(dir == -1){
-    // Turn the other way
-    //roboclaw.ForwardM2(address,pwmVal);
-  //} else {
-    //roboclaw.ForwardM2(address, 0);
-    //}
-}
 
-void senseInductive(){
-  int pos = 0;
-  noInterrupts(); // disable interrupts temporarily while reading
-  pos = pos_i;
-  interrupts(); // turn interrupts back on
-  
-  if(pos_induct==-999){
-    pos_induct = pos;
-   } else {
-     pos_induct = (pos_induct + pos)/2; 
-   }
- }
 
 void readEncoder(){
   // Read encoder B when ENCA rises

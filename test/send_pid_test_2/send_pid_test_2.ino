@@ -3,6 +3,16 @@
 #define ENCB 3
 #include <util/atomic.h>
 
+//Includes required to use Roboclaw library
+#include <SoftwareSerial.h>
+#include "RoboClaw.h"
+
+//See limitations of Arduino SoftwareSerial
+SoftwareSerial serial(19,18);  
+RoboClaw roboclaw(&serial,10000);
+
+#define address 0x80
+
 // globals
 long prevT = 0;
 int posPrev = 0;
@@ -11,6 +21,7 @@ int posPrev = 0;
 volatile int pos_i = 0;
 volatile float velocity_i = 0;
 volatile long prevT_i = 0;
+volatile long eprev = 0;
 
 float v1Filt = 0;
 float v1Prev = 0;
@@ -18,7 +29,15 @@ float v2Filt = 0;
 float v2Prev = 0;
 
 
+// CHANGE FOR TUNING
+float desired_rpm = 0;
+
+//pid
+float eintegral = 0;
+
 void setup() {
+  //Open roboclaw serial ports
+  roboclaw.begin(38400);
   Serial.begin(115200);
 
   pinMode(ENCA,INPUT_PULLUP);
@@ -35,8 +54,8 @@ void loop() {
   float velocity2 = 0;
   //noInterrupts(); // disable interrupts temporarily while reading
   ATOMIC_BLOCK(ATOMIC_RESTORESTATE){
-  pos = pos_i;
-  velocity2 = velocity_i;
+    pos = pos_i;
+    velocity2 = velocity_i;
   }
   //interrupts(); // turn interrupts back on
 
@@ -52,17 +71,41 @@ void loop() {
   float v2 = velocity2/600*60.0;
 
   // Low-pass filter (25 Hz cutoff)
-  v1Filt = 0.854*v1Filt + 0.0728*v1 + 0.0728*v1Prev;
-  v1Prev = v1;
-  v2Filt = 0.854*v2Filt + 0.0728*v2 + 0.0728*v2Prev;
-  v2Prev = v2;
+  //v1Filt = 0.854*v1Filt + 0.0728*v1 + 0.0728*v1Prev;
+  //v1Prev = v1;
+  //v2Filt = 0.854*v2Filt + 0.0728*v2 + 0.0728*v2Prev;
+  //v2Prev = v2;
 
+  // Compute the control signal u
+  // FIND THESE VALUES
+  float kp = 0;
+  //float kp = .7;
+  //float ki = 0;
+  float ki = 0;
+  float kd = 0;
+  float e = desired_rpm-v1;
+  //float e = desired_rpm-v1;
+  //float e = desired_rpm-v1;
 
-  Serial.print(" ");
-  Serial.print(v1Filt);
+  float dedt = (e-eprev)/deltaT;
+  
+  eintegral = eintegral + e*deltaT;
+  if (eintegral > 30){
+    eintegral = 30;
+    }
+  float u = kp*e + kd*dedt + ki*eintegral;
+
+  int pwr = (int) fabs(u);
+  if(pwr > 127){
+    pwr = 127;
+  }
+  
+  roboclaw.BackwardM2(address, pwr);
+
+  Serial.println(v1);
   //Serial.print(pos);
-  Serial.println();
-  delay(1);
+  //Serial.println();
+  //delay(1);
 }
 
 

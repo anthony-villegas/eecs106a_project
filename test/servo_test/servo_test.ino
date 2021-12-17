@@ -6,7 +6,7 @@ Servo myservo;
 // Define the servo pin:
 #define servoPin 9
 // Create a variable to store the servo position:
-int angleClosed = 100;
+int angleClosed = 80;
 int angleOpen = 150;
 void setup() {
   // Attach the Servo variable to a pin:
@@ -23,6 +23,6 @@ void loop() {
   //myservo.write(angle);
   //delay(1000);
   //myservo.write(angleOpen);
-  myservo.write(angleOpen);
+  myservo.write(angleClosed);
   
 }

@@ -3,6 +3,7 @@
 #define ENCB 3
 #define INDUCT 20
 #define servoPin 9
+#include <util/atomic.h>
 
 //Includes required to use Roboclaw library
 #include <SoftwareSerial.h>
@@ -18,6 +19,9 @@ Servo myservo;
 
 #define address 0x80
 
+volatile int rotations = 0;
+
+int encoder_counts = 600;
 // globals
 long prevT = 0;
 int posPrev = 0;
@@ -35,11 +39,11 @@ float v2Filt = 0;
 float v2Prev = 0;
 
 // calculated desired values
-float desired_rpm = 0;
+float desired_rpm = 80;
 float sender_release_pulse_angle = 0;
 float catcher_angle = 0;
 
-float rpmError = 1;
+float rpmError = 25;
 
 //pid
 float eintegral = 0;
@@ -50,7 +54,10 @@ int servoClosed = 100;
 
 boolean ball_released = false;
 
+
 void setup() {
+  
+
   //Open roboclaw serial ports
   roboclaw.begin(38400);
   
@@ -59,9 +66,11 @@ void setup() {
   pinMode(ENCA,INPUT_PULLUP);
   pinMode(ENCB,INPUT_PULLUP);
   pinMode(INDUCT, INPUT);
+  
   // Attach the Servo variable to a pin:
   myservo.attach(servoPin);
 
+  //myservo.write(servoClosed);
   attachInterrupt(digitalPinToInterrupt(ENCA),
                   readEncoder,RISING);
   attachInterrupt(digitalPinToInterrupt(INDUCT),
@@ -69,7 +78,7 @@ void setup() {
 
   const float g = 9.81;
   const float l = 0.127; // arm length (5")
-  const float d = 0.5; // distance to target (m)
+  const float d = 0.5995; // distance to target (m)
   const float theta = 45*PI/180;
   const float theta_zero = PI/2;
   const float d_receiver = cos(theta)*(l-0.0254); // distance from arm center to catcher center
@@ -90,20 +99,40 @@ void setup() {
   }
   
   sender_release_pulse_angle = ((desired_omega*t_l)*180/(PI))/0.6; //0.6 to get which pulse # from 1-600
+  desired_rpm = 80;
+  sender_release_pulse_angle = 100;
+  
+  //giver servo time to close
+  
 }
 
 void loop() {
-    if (ball_released == true) {
-      roboclaw.ForwardM2(address, 0);
-      while(true){}
-    }
+  int abs_pos = fabs((pos_i % encoder_counts));
+  //Serial.print("Pos ");
+  //Serial.print(abs_pos - pos_induct);
+  //Serial.println();
+  //Serial.print("Pulse_angle ");
+  //Serial.print(sender_release_pulse_angle);
+  //Serial.println();
+  //Serial.print("rotations: ");
+  //Serial.print(rotations);
+  //Serial.println();
+  float velocity = fabs(v1Filt);
+  
+  
+    //if (ball_released == true) {
+      //roboclaw.ForwardM2(address, 0);
+      //while(true){}
+   // }
   // read the position and velocity
   int pos = 0;
   float velocity2 = 0;
-  noInterrupts(); // disable interrupts temporarily while reading
-  pos = pos_i;
-  velocity2 = velocity_i;
-  interrupts(); // turn interrupts back on
+  int rotations2 = 0;
+  ATOMIC_BLOCK(ATOMIC_RESTORESTATE){
+    pos = pos_i;
+    velocity2 = velocity_i;
+    rotations2 = rotations;
+  }
 
   // Compute velocity with method 1
   long currT = micros();
@@ -111,22 +140,34 @@ void loop() {
   float velocity1 = (pos - posPrev)/deltaT;
   posPrev = pos;
   prevT = currT;
-
+  if(pos > 1200){
+  if (abs_pos > ((int)sender_release_pulse_angle)-5 and abs_pos + 5 > ((int)sender_release_pulse_angle) and (velocity < desired_rpm and velocity > desired_rpm - rpmError)){
+      noInterrupts();
+      releaseBall();
+      ball_released = true;
+      interrupts();
+    }
+  }
   // Convert count/s to RPM
   float v1 = velocity1/600*60.0;
   float v2 = velocity2/600*60.0;
-
+  v1Filt = v1;
   // Low-pass filter (25 Hz cutoff)
-  v1Filt = 0.854*v1Filt + 0.0728*v1 + 0.0728*v1Prev;
-  v1Prev = v1;
-  v2Filt = 0.854*v2Filt + 0.0728*v2 + 0.0728*v2Prev;
-  v2Prev = v2;
-
+  //v1Filt = 0.854*v1Filt + 0.0728*v1 + 0.0728*v1Prev;
+  //v1Prev = v1;
+  //v2Filt = 0.854*v2Filt + 0.0728*v2 + 0.0728*v2Prev;
+  //v2Prev = v2;
+  Serial.print("Desired V ");
+  Serial.print(desired_rpm);
+  Serial.println();
+  Serial.print("RPM ");
+  Serial.print(v1);
+  Serial.println();
   // Compute the control signal u
   // FIND THESE VALUES
-  float kp = 5;
-  float ki = 10;
-  float e = desired_rpm-v1Filt;
+  float kp = 2.4;
+  float ki = 0.4;
+  float e = desired_rpm-v1;
   eintegral = eintegral + e*deltaT;
   
   float u = kp*e + ki*eintegral;
@@ -140,18 +181,14 @@ void loop() {
   if(pwr > 127){
     pwr = 127;
   }
-  //spinArm(dir,pwr);
-  spinArm(-1, 80);
-  delay(3000);
-  spinArm(-1, 0);
-  delay(10000);
   
+  roboclaw.BackwardM2(address, pwr);
 
-  Serial.print(" ");
-  Serial.print(v1Filt);
+  //Serial.print(" ");
+  //Serial.print(v1Filt);
   //Serial.print(pos);
-  Serial.println();
-  delay(1);
+  //Serial.println();
+  //delay(1);
 }
 
 void spinArm(int dir, int pwmVal){
@@ -181,28 +218,23 @@ void readEncoder(){
   }
   pos_i = pos_i + increment;
 
-  // check if angle == desired, if so trigger release
-  if (pos_i == (int)sender_release_pulse_angle and (v1Filt < desired_rpm + rpmError and v1Filt > desired_rpm - rpmError)){
-      noInterrupts();
-      releaseBall();
-      interrupts();
-      ball_released = true;
-    } 
+  
 }
 
 void senseInductive(){
   int pos = 0;
-  noInterrupts(); // disable interrupts temporarily while reading
-  pos = pos_i;
-  interrupts(); // turn interrupts back on
-  
-  if(pos_induct==-999){
-    pos_induct = pos;
-   } else {
-     pos_induct = (pos_induct + pos)/2; 
-   }
+  ATOMIC_BLOCK(ATOMIC_RESTORESTATE){
+    pos = pos_i;
+  }
+  rotations = rotations + 1;
+ if (pos_induct = -999){
+    pos_induct = pos % 600;
+    sender_release_pulse_angle = pos_induct + sender_release_pulse_angle;
+    } 
  }
 
  void releaseBall(){
   myservo.write(servoOpen);
+  delay(1000);
+  Serial.print("Printing");
   }
