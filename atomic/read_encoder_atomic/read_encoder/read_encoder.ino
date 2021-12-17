@@ -30,19 +30,31 @@ void setup() {
 
 void loop() {
 
+
+  
   // read the position and velocity
   int pos = 0;
   float velocity2 = 0;
   //noInterrupts(); // disable interrupts temporarily while reading
+  Serial.print("posPrev ");
+  Serial.print(posPrev);
+  Serial.println();
   ATOMIC_BLOCK(ATOMIC_RESTORESTATE){
   pos = pos_i;
   velocity2 = velocity_i;
   }
+  Serial.print("pos ");
+  Serial.print(pos);
+  Serial.println();
+  
   //interrupts(); // turn interrupts back on
 
   // Compute velocity with method 1
   long currT = micros();
   float deltaT = ((float) (currT-prevT))/1.0e6;
+  Serial.print("deltaT ");
+  Serial.print(deltaT,7);
+  Serial.println();
   float velocity1 = (pos - posPrev)/deltaT;
   posPrev = pos;
   prevT = currT;
@@ -58,9 +70,10 @@ void loop() {
   v2Prev = v2;
 
 
-  Serial.print(" ");
+  Serial.print("Velocity ");
   Serial.print(v1Filt);
   //Serial.print(pos);
+  Serial.println();
   Serial.println();
   delay(1);
 }

@@ -24,7 +24,7 @@ volatile int rotations = 0;
 int encoder_counts = 600;
 // globals
 long prevT = 0;
-int posPrev = 0;
+volatile int posPrev = 0;
 // Use the "volatile" directive for variables
 // used in an interrupt
 volatile int pos_i = 0;
@@ -138,6 +138,10 @@ void loop() {
   long currT = micros();
   float deltaT = ((float) (currT-prevT))/1.0e6;
   float velocity1 = (pos - posPrev)/deltaT;
+  Serial.print("pos ");
+  Serial.println(pos);
+  Serial.print("posPrev ");
+  Serial.println(posPrev);
   posPrev = pos;
   prevT = currT;
   if(pos > 1200){
@@ -157,12 +161,15 @@ void loop() {
   //v1Prev = v1;
   //v2Filt = 0.854*v2Filt + 0.0728*v2 + 0.0728*v2Prev;
   //v2Prev = v2;
-  Serial.print("Desired V ");
-  Serial.print(desired_rpm);
-  Serial.println();
-  Serial.print("RPM ");
-  Serial.print(v1);
-  Serial.println();
+  //Serial.print("Desired V ");
+  //Serial.print(desired_rpm);
+  //Serial.println();
+  //Serial.print("RPM ");
+  //Serial.print(v1);
+  //Serial.println();
+ 
+  Serial.print("deltaT ");
+  Serial.println(deltaT, 7);
   // Compute the control signal u
   // FIND THESE VALUES
   float kp = 2.4;
@@ -188,7 +195,7 @@ void loop() {
   //Serial.print(v1Filt);
   //Serial.print(pos);
   //Serial.println();
-  //delay(1);
+  delay(1);
 }
 
 void spinArm(int dir, int pwmVal){
@@ -222,13 +229,13 @@ void readEncoder(){
 }
 
 void senseInductive(){
-  int pos = 0;
+  int pos_y = 0;
   ATOMIC_BLOCK(ATOMIC_RESTORESTATE){
-    pos = pos_i;
+    pos_y = pos_i;
   }
   rotations = rotations + 1;
- if (pos_induct = -999){
-    pos_induct = pos % 600;
+  if (pos_induct = -999){
+    pos_induct = pos_y % 600;
     sender_release_pulse_angle = pos_induct + sender_release_pulse_angle;
     } 
  }
